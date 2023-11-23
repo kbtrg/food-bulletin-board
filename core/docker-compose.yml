@@ -1,0 +1,42 @@
+services:
+  db:
+    # M1Macでも使用できるように指定
+    platform: linux/x86_64
+    image: mysql:8.0.20
+    command: --default-authentication-plugin=mysql_native_password --sql_mode=""
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+
+  redis:
+    image: redis:alpine
+    command: ["redis-server", "--bind", "0.0.0.0", "--port", "6379"]
+    ports:
+      - "6379:6379"
+
+  app:
+    build: .
+    depends_on:
+      - db
+    stdin_open: true
+    tty: true
+    environment:
+      DB_USERNAME: root
+      DB_PASSWORD: password
+      DB_PORT: 3306
+      DB_HOST: db
+      RAILS_MAX_THREADS: 5
+      RAILS_ENV: development
+      CORS_ORIGINS: "localhost:3000, 127.0.0.1:3000"
+      REDIS_URL: redis://redis:6379
+    ports:
+      # 3000番は使用しているため3001番を使う
+      - "3001:3000"
+    volumes:
+      - .:/usr/src/app
+
+volumes:
+  db-data:
